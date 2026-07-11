@@ -1,0 +1,272 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MAX 500
+#define MAXRESULT 5000
+
+typedef struct
+{
+    char text[MAX];
+    int keyLength;
+    int score;
+}Result;
+
+Result result[MAXRESULT];
+int totalResult=0;
+
+//-------------------------------------
+// English Letter Frequency Score
+//-------------------------------------
+
+int scoreText(char text[])
+{
+    int score=0;
+
+    char common[]="ETAOINSHRDLU";
+
+    for(int i=0;text[i]!='\0';i++)
+    {
+        char c=toupper(text[i]);
+
+        for(int j=0;common[j]!='\0';j++)
+        {
+            if(c==common[j])
+            {
+                score++;
+                break;
+            }
+        }
+    }
+
+    return score;
+}
+
+//-------------------------------------
+// Swap
+//-------------------------------------
+
+void swap(int *a,int *b)
+{
+    int t=*a;
+    *a=*b;
+    *b=t;
+}
+
+//-------------------------------------
+// Generate Permutations
+//-------------------------------------
+
+void generatePermutation(int arr[],int left,int right,
+                         int perms[][8],int *count)
+{
+    if(left==right)
+    {
+        for(int i=0;i<=right;i++)
+            perms[*count][i]=arr[i];
+
+        (*count)++;
+        return;
+    }
+
+    for(int i=left;i<=right;i++)
+    {
+        swap(&arr[left],&arr[i]);
+
+        generatePermutation(arr,left+1,right,
+                            perms,count);
+
+        swap(&arr[left],&arr[i]);
+    }
+}
+
+//-------------------------------------
+// Columnar Transposition Decryption
+//-------------------------------------
+
+void decryptColumnar(char cipher[],
+                     int keyLen,
+                     int perm[],
+                     char plain[])
+{
+    int len = strlen(cipher);
+
+    int rows = len / keyLen;
+
+    if(len % keyLen != 0)
+        rows++;
+
+    char matrix[100][100];
+
+    int index = 0;
+
+    // Fill matrix column by column according to permutation
+    for(int k = 0; k < keyLen; k++)
+    {
+        int col = perm[k];
+
+        for(int i = 0; i < rows; i++)
+        {
+            if(index < len)
+                matrix[i][col] = cipher[index++];
+            else
+                matrix[i][col] = 'X';
+        }
+    }
+
+    // Read plaintext row-wise
+    index = 0;
+
+    for(int i = 0; i < rows; i++)
+    {
+        for(int j = 0; j < keyLen; j++)
+        {
+            plain[index++] = matrix[i][j];
+        }
+    }
+
+    plain[index] = '\0';
+
+    // Remove trailing padding X
+    while(index > 0 && plain[index - 1] == 'X')
+    {
+        plain[index - 1] = '\0';
+        index--;
+    }
+}
+
+//-------------------------------------
+// Store Candidate Plaintext
+//-------------------------------------
+
+void storeCandidate(char text[], int keyLength)
+{
+    if(totalResult >= MAXRESULT)
+        return;
+
+    strcpy(result[totalResult].text, text);
+
+    result[totalResult].keyLength = keyLength;
+
+    result[totalResult].score = scoreText(text);
+
+    totalResult++;
+}
+
+//-------------------------------------
+// Try All Permutations for a Key Length
+//-------------------------------------
+
+void bruteForceKeyLength(char cipher[], int keyLength)
+{
+    int perm[8];
+
+    for(int i = 0; i < keyLength; i++)
+        perm[i] = i;
+
+    int perms[40320][8];
+
+    int count = 0;
+
+    generatePermutation(perm,
+                        0,
+                        keyLength - 1,
+                        perms,
+                        &count);
+
+    char plain[MAX];
+
+    for(int i = 0; i < count; i++)
+    {
+        decryptColumnar(cipher,
+                        keyLength,
+                        perms[i],
+                        plain);
+
+        storeCandidate(plain, keyLength);
+    }
+}
+
+//-------------------------------------
+// Sort Candidates by Score (Descending)
+//-------------------------------------
+
+void sortResults()
+{
+    Result temp;
+
+    for(int i = 0; i < totalResult - 1; i++)
+    {
+        for(int j = i + 1; j < totalResult; j++)
+        {
+            if(result[j].score > result[i].score)
+            {
+                temp = result[i];
+                result[i] = result[j];
+                result[j] = temp;
+            }
+        }
+    }
+}
+
+//-------------------------------------
+// Display Top 5 Candidates
+//-------------------------------------
+
+void displayTop5()
+{
+    printf("\n=========================================\n");
+    printf("Top 5 Probable Plaintexts\n");
+    printf("=========================================\n");
+
+    int limit = (totalResult < 5) ? totalResult : 5;
+
+    for(int i = 0; i < limit; i++)
+    {
+        printf("\nRank %d\n", i + 1);
+        printf("Key Length : %d\n", result[i].keyLength);
+        printf("Score      : %d\n", result[i].score);
+        printf("Plaintext  : %s\n", result[i].text);
+    }
+}
+
+//-------------------------------------
+// Try Key Lengths from 2 to 8
+//-------------------------------------
+
+void bruteForceAll(char cipher[])
+{
+    totalResult = 0;
+
+    printf("\nTrying Key Lengths 2 to 8...\n");
+
+    for(int key = 2; key <= 8; key++)
+    {
+        printf("Testing Key Length %d...\n", key);
+
+        bruteForceKeyLength(cipher, key);
+    }
+
+    sortResults();
+}
+
+int main()
+{
+    char ciphertext[MAX];
+
+    printf("============================================\n");
+    printf(" Cryptanalysis Tool for Columnar Transposition\n");
+    printf("============================================\n");
+
+    printf("\nEnter Ciphertext : ");
+    fgets(ciphertext, MAX, stdin);
+
+    ciphertext[strcspn(ciphertext, "\n")] = '\0';
+
+    bruteForceAll(ciphertext);
+
+    displayTop5();
+
+    return 0;
+}
