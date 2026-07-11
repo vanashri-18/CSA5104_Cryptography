@@ -1,0 +1,375 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 1000
+
+//--------------------------------------------
+// Generate Ranking (Handles Duplicate Letters)
+//--------------------------------------------
+void generateRank(char key[], int rank[])
+{
+    int len = strlen(key);
+    int used[100]={0};
+    int r=1;
+
+    while(r<=len)
+    {
+        char min='Z'+1;
+        int index=-1;
+
+        for(int i=0;i<len;i++)
+        {
+            if(!used[i] && key[i]<min)
+            {
+                min=key[i];
+                index=i;
+            }
+        }
+
+        rank[index]=r++;
+        used[index]=1;
+    }
+}
+
+//--------------------------------------------
+// Display Matrix
+//--------------------------------------------
+void displayMatrix(char mat[100][100],int rows,int cols)
+{
+    printf("\n");
+
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+            printf("%c ",mat[i][j]);
+
+        printf("\n");
+    }
+}
+
+//--------------------------------------------
+// Single Columnar Encryption
+//--------------------------------------------
+void singleEncrypt(char text[],char key[],char cipher[])
+{
+    int cols=strlen(key);
+    int rows=(strlen(text)+cols-1)/cols;
+
+    char mat[100][100];
+
+    int rank[100];
+
+    generateRank(key,rank);
+
+    int index=0;
+
+    //Fill Matrix
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+        {
+            if(index<strlen(text))
+                mat[i][j]=text[index++];
+            else
+                mat[i][j]='X';
+        }
+    }
+
+    printf("\nOriginal Matrix:");
+    displayMatrix(mat,rows,cols);
+
+    index=0;
+
+    //Read Column Order
+    for(int r=1;r<=cols;r++)
+    {
+        for(int j=0;j<cols;j++)
+        {
+            if(rank[j]==r)
+            {
+                for(int i=0;i<rows;i++)
+                    cipher[index++]=mat[i][j];
+            }
+        }
+    }
+
+    cipher[index]='\0';
+}
+
+//--------------------------------------------
+// Single Columnar Decryption
+//--------------------------------------------
+void singleDecrypt(char cipher[],char key[],char plain[])
+{
+    int cols=strlen(key);
+    int rows=(strlen(cipher)+cols-1)/cols;
+
+    char mat[100][100];
+
+    int rank[100];
+
+    generateRank(key,rank);
+
+    int index=0;
+
+    //Fill columns
+    for(int r=1;r<=cols;r++)
+    {
+        for(int j=0;j<cols;j++)
+        {
+            if(rank[j]==r)
+            {
+                for(int i=0;i<rows;i++)
+                    mat[i][j]=cipher[index++];
+            }
+        }
+    }
+
+    index=0;
+
+    //Read row-wise
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+            plain[index++]=mat[i][j];
+    }
+
+    plain[index]='\0';
+
+    while(index>0 && plain[index-1]=='X')
+    {
+        plain[index-1]='\0';
+        index--;
+    }
+}
+
+//----------------------------------------------------
+// Double Transposition Encryption
+//----------------------------------------------------
+void doubleEncrypt(char plaintext[],
+                   char key1[],
+                   char key2[],
+                   char ciphertext[])
+{
+    char temp[MAX];
+
+    printf("\n========== First Transposition ==========\n");
+
+    singleEncrypt(plaintext, key1, temp);
+
+    printf("\nCipher after First Transposition:\n%s\n", temp);
+
+    printf("\n========== Second Transposition ==========\n");
+
+    singleEncrypt(temp, key2, ciphertext);
+
+    printf("\nFinal Ciphertext:\n%s\n", ciphertext);
+}
+
+//----------------------------------------------------
+// Double Transposition Decryption
+//----------------------------------------------------
+void doubleDecrypt(char ciphertext[],
+                   char key1[],
+                   char key2[],
+                   char plaintext[])
+{
+    char temp[MAX];
+
+    printf("\n========== Reverse Second Transposition ==========\n");
+
+    singleDecrypt(ciphertext, key2, temp);
+
+    printf("\nIntermediate Text:\n%s\n", temp);
+
+    printf("\n========== Reverse First Transposition ==========\n");
+
+    singleDecrypt(temp, key1, plaintext);
+
+    printf("\nRecovered Plaintext:\n%s\n", plaintext);
+}
+
+//----------------------------------------------------
+// Randomness Analysis
+//----------------------------------------------------
+void randomness(char text[])
+{
+    int freq[26]={0};
+
+    int total=0;
+
+    for(int i=0;text[i]!='\0';i++)
+    {
+        if(text[i]>='A' && text[i]<='Z')
+        {
+            freq[text[i]-'A']++;
+            total++;
+        }
+        else if(text[i]>='a' && text[i]<='z')
+        {
+            freq[text[i]-'a']++;
+            total++;
+        }
+    }
+
+    int unique=0;
+
+    for(int i=0;i<26;i++)
+    {
+        if(freq[i]>0)
+            unique++;
+    }
+
+    printf("\nRandomness Analysis\n");
+    printf("-------------------------\n");
+    printf("Total Letters : %d\n", total);
+    printf("Unique Letters: %d\n", unique);
+
+    printf("\nLetter Frequency:\n");
+
+    for(int i=0;i<26;i++)
+    {
+        if(freq[i]!=0)
+            printf("%c : %d\n",'A'+i,freq[i]);
+    }
+}
+
+//----------------------------------------------------
+// Execution Time Function
+//----------------------------------------------------
+double executionTime(void (*func)(char[],char[],char[]),
+                     char text[],
+                     char key[],
+                     char output[])
+{
+    clock_t start,end;
+
+    start=clock();
+
+    func(text,key,output);
+
+    end=clock();
+
+    return (double)(end-start)/CLOCKS_PER_SEC;
+}
+
+int main()
+{
+    char plaintext[MAX];
+    char key1[100], key2[100];
+
+    char singleCipher[MAX];
+    char doubleCipher[MAX];
+    char decrypted[MAX];
+    char temp[MAX];
+
+    clock_t start,end;
+
+    double singleTime,doubleTime;
+
+    printf("=============================================\n");
+    printf("      DOUBLE TRANSPOSITION CIPHER\n");
+    printf("=============================================\n");
+
+    printf("\nEnter Plaintext : ");
+    fgets(plaintext,MAX,stdin);
+    plaintext[strcspn(plaintext,"\n")]=0;
+
+    printf("Enter First Keyword : ");
+    scanf("%s",key1);
+
+    printf("Enter Second Keyword : ");
+    scanf("%s",key2);
+
+    //----------------------------------------
+    // Single Transposition
+    //----------------------------------------
+
+    start=clock();
+
+    singleEncrypt(plaintext,key1,singleCipher);
+
+    end=clock();
+
+    singleTime=(double)(end-start)/CLOCKS_PER_SEC;
+
+    //----------------------------------------
+    // Double Transposition
+    //----------------------------------------
+
+    start=clock();
+
+    doubleEncrypt(plaintext,key1,key2,doubleCipher);
+
+    end=clock();
+
+    doubleTime=(double)(end-start)/CLOCKS_PER_SEC;
+
+    //----------------------------------------
+    // Decryption
+    //----------------------------------------
+
+    printf("\n\n========= DECRYPTION =========\n");
+
+    doubleDecrypt(doubleCipher,key1,key2,decrypted);
+
+    //----------------------------------------
+    // Randomness Analysis
+    //----------------------------------------
+
+    printf("\n\n========= SINGLE TRANSPOSITION =========");
+
+    printf("\nCiphertext : %s\n",singleCipher);
+
+    randomness(singleCipher);
+
+    printf("\n\n========= DOUBLE TRANSPOSITION =========");
+
+    printf("\nCiphertext : %s\n",doubleCipher);
+
+    randomness(doubleCipher);
+
+    //----------------------------------------
+    // Comparison Table
+    //----------------------------------------
+
+    printf("\n\n==============================================\n");
+    printf("           SECURITY COMPARISON\n");
+    printf("==============================================\n");
+
+    printf("%-25s %-15s %-15s\n",
+           "Technique",
+           "Time(sec)",
+           "Cipher Length");
+
+    printf("------------------------------------------------------\n");
+
+    printf("%-25s %-15f %-15lu\n",
+           "Single Transposition",
+           singleTime,
+           strlen(singleCipher));
+
+    printf("%-25s %-15f %-15lu\n",
+           "Double Transposition",
+           doubleTime,
+           strlen(doubleCipher));
+
+    printf("------------------------------------------------------\n");
+
+    printf("\nSecurity Observation\n");
+    printf("-------------------------\n");
+
+    printf("Single Transposition\n");
+    printf("• One level of column permutation.\n");
+    printf("• Easier to attack using frequency and pattern analysis.\n\n");
+
+    printf("Double Transposition\n");
+    printf("• Two independent permutations.\n");
+    printf("• Better diffusion.\n");
+    printf("• Harder to break using classical attacks.\n");
+
+    return 0;
+}
+
