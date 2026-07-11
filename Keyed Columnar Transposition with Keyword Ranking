@@ -1,0 +1,181 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 100
+
+// Function to generate key ranking
+void generateRanking(char key[], int rank[])
+{
+    int len = strlen(key);
+    int used[MAX] = {0};
+    int r = 1;
+
+    while (r <= len)
+    {
+        char min = '{';
+        int index = -1;
+
+        for (int i = 0; i < len; i++)
+        {
+            if (!used[i] && key[i] < min)
+            {
+                min = key[i];
+                index = i;
+            }
+        }
+
+        rank[index] = r++;
+        used[index] = 1;
+    }
+}
+
+// Display Matrix
+void displayMatrix(char matrix[100][100], int rows, int cols)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+            printf("%c ", matrix[i][j]);
+        printf("\n");
+    }
+}
+
+int main()
+{
+    char plaintext[500];
+    char keyword[100];
+    char matrix[100][100];
+    char permuted[100][100];
+    char ciphertext[500];
+    char decrypted[500];
+
+    int rank[100];
+
+    printf("========== Keyed Columnar Transposition ==========\n");
+
+    printf("\nEnter Plaintext : ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    printf("Enter Keyword : ");
+    scanf("%s", keyword);
+
+    int cols = strlen(keyword);
+    int len = strlen(plaintext);
+
+    generateRanking(keyword, rank);
+
+    printf("\nKeyword Ranking:\n");
+    for (int i = 0; i < cols; i++)
+        printf("%c ", keyword[i]);
+
+    printf("\n");
+
+    for (int i = 0; i < cols; i++)
+        printf("%d ", rank[i]);
+
+    printf("\n");
+
+    // Calculate rows
+    int rows = len / cols;
+    if (len % cols != 0)
+        rows++;
+
+    // Fill matrix row-wise
+    int index = 0;
+
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            if (index < len)
+                matrix[i][j] = plaintext[index++];
+            else
+                matrix[i][j] = 'X';
+        }
+    }
+
+    printf("\nOriginal Matrix:\n");
+    displayMatrix(matrix, rows, cols);
+
+    // Permute columns
+    for (int k = 1; k <= cols; k++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            if (rank[j] == k)
+            {
+                for (int i = 0; i < rows; i++)
+                    permuted[i][k - 1] = matrix[i][j];
+            }
+        }
+    }
+
+    printf("\nPermuted Matrix:\n");
+    displayMatrix(permuted, rows, cols);
+
+    // Generate Ciphertext
+    index = 0;
+
+    for (int j = 0; j < cols; j++)
+    {
+        for (int i = 0; i < rows; i++)
+        {
+            ciphertext[index++] = permuted[i][j];
+        }
+    }
+
+    ciphertext[index] = '\0';
+
+    printf("\nCiphertext : %s\n", ciphertext);
+
+    // ---------- Decryption ----------
+
+    index = 0;
+
+    // Fill permuted matrix column-wise
+    for (int j = 0; j < cols; j++)
+    {
+        for (int i = 0; i < rows; i++)
+        {
+            permuted[i][j] = ciphertext[index++];
+        }
+    }
+
+    // Restore original matrix
+    for (int k = 1; k <= cols; k++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            if (rank[j] == k)
+            {
+                for (int i = 0; i < rows; i++)
+                    matrix[i][j] = permuted[i][k - 1];
+            }
+        }
+    }
+
+    // Read plaintext row-wise
+    index = 0;
+
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            decrypted[index++] = matrix[i][j];
+        }
+    }
+
+    decrypted[index] = '\0';
+
+    // Remove padding
+    while (index > 0 && decrypted[index - 1] == 'X')
+    {
+        decrypted[index - 1] = '\0';
+        index--;
+    }
+
+    printf("Decrypted Text : %s\n", decrypted);
+
+    return 0;
+}
