@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 1000
+
+void displayMatrix(char matrix[100][100], int rows, int cols)
+{
+    printf("\nMatrix:\n\n");
+
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+            printf("%c ", matrix[i][j]);
+
+        printf("\n");
+    }
+}
+
+int main()
+{
+    char plaintext[MAX];
+    char ciphertext[MAX];
+    char decrypted[MAX];
+    char matrix[100][100];
+
+    int key;
+    char pad;
+
+    printf("========== Simple Columnar Transposition ==========\n");
+
+    printf("\nEnter Plaintext : ");
+    fgets(plaintext, MAX, stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    printf("Enter Key Length (Columns): ");
+    scanf("%d", &key);
+
+    printf("Enter Padding Character : ");
+    scanf(" %c", &pad);
+
+    int len = strlen(plaintext);
+
+    int rows = len / key;
+
+    if(len % key != 0)
+        rows++;
+
+    int total = rows * key;
+    int padding = total - len;
+
+    printf("\nPadding Required = %d\n", padding);
+
+    int index = 0;
+
+    // Fill Matrix Row-wise
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<key;j++)
+        {
+            if(index < len)
+                matrix[i][j] = plaintext[index++];
+            else
+                matrix[i][j] = pad;
+        }
+    }
+
+    displayMatrix(matrix, rows, key);
+
+    // Encrypt Column-wise
+    index = 0;
+
+    for(int j=0;j<key;j++)
+    {
+        for(int i=0;i<rows;i++)
+        {
+            ciphertext[index++] = matrix[i][j];
+        }
+    }
+
+    ciphertext[index] = '\0';
+
+    printf("\nCiphertext : %s\n", ciphertext);
+
+    // ---------------- Decryption ----------------
+
+    index = 0;
+
+    for(int j=0;j<key;j++)
+    {
+        for(int i=0;i<rows;i++)
+        {
+            matrix[i][j] = ciphertext[index++];
+        }
+    }
+
+    index = 0;
+
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<key;j++)
+        {
+            decrypted[index++] = matrix[i][j];
+        }
+    }
+
+    decrypted[index] = '\0';
+
+    // Remove padding automatically
+    while(index > 0 && decrypted[index - 1] == pad)
+    {
+        decrypted[index - 1] = '\0';
+        index--;
+    }
+
+    printf("Decrypted Text : %s\n", decrypted);
+
+    return 0;
+}
