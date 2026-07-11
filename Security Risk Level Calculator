@@ -1,0 +1,32 @@
+#include <stdio.h>
+
+int main()
+{
+    int likelihood, impact, risk;
+
+    printf("Enter Likelihood (1-5): ");
+    scanf("%d", &likelihood);
+
+    printf("Enter Impact (1-5): ");
+    scanf("%d", &impact);
+
+    // Validate input
+    if(likelihood < 1 || likelihood > 5 || impact < 1 || impact > 5)
+    {
+        printf("\nInvalid Input! Enter values between 1 and 5.\n");
+        return 0;
+    }
+
+    risk = likelihood * impact;
+
+    printf("\nRisk Score : %d\n", risk);
+
+    if(risk <= 5)
+        printf("Risk Level : Low\n");
+    else if(risk <= 15)
+        printf("Risk Level : Medium\n");
+    else
+        printf("Risk Level : High\n");
+
+    return 0;
+}
