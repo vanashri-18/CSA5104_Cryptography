@@ -1,0 +1,115 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+// Find modular inverse of determinant
+int modInverse(int det) {
+    det = (det % 26 + 26) % 26;
+
+    for (int i = 1; i < 26; i++) {
+        if ((det * i) % 26 == 1)
+            return i;
+    }
+    return -1;
+}
+
+int main() {
+    int key[2][2];
+    int inverse[2][2];
+    int det, detInv;
+    char plaintext[100];
+    char ciphertext[100];
+    char decrypted[100];
+
+    printf("Enter 2x2 Key Matrix:\n");
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            scanf("%d", &key[i][j]);
+
+    // Determinant
+    det = key[0][0] * key[1][1] - key[0][1] * key[1][0];
+    det = (det % 26 + 26) % 26;
+
+    printf("\nDeterminant = %d\n", det);
+
+    if (gcd(det, 26) != 1) {
+        printf("Key matrix is NOT valid.\n");
+        printf("Determinant is not relatively prime to 26.\n");
+        return 0;
+    }
+
+    printf("Key matrix is valid.\n");
+
+    detInv = modInverse(det);
+
+    printf("Determinant Inverse = %d\n", detInv);
+
+    // Inverse Matrix
+    inverse[0][0] = ( key[1][1] * detInv) % 26;
+    inverse[0][1] = (-key[0][1] * detInv) % 26;
+    inverse[1][0] = (-key[1][0] * detInv) % 26;
+    inverse[1][1] = ( key[0][0] * detInv) % 26;
+
+    // Handle negative values
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            inverse[i][j] = (inverse[i][j] + 26) % 26;
+
+    printf("\nInverse Key Matrix:\n");
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++)
+            printf("%3d", inverse[i][j]);
+        printf("\n");
+    }
+
+    printf("\nEnter Plaintext (Only Alphabets): ");
+    scanf("%s", plaintext);
+
+    int len = strlen(plaintext);
+
+    // Convert to uppercase
+    for (int i = 0; i < len; i++)
+        plaintext[i] = toupper(plaintext[i]);
+
+    // Padding if odd length
+    if (len % 2 != 0) {
+        plaintext[len] = 'X';
+        plaintext[len + 1] = '\0';
+        len++;
+    }
+
+    // Encryption
+    for (int i = 0; i < len; i += 2) {
+        int p1 = plaintext[i] - 'A';
+        int p2 = plaintext[i + 1] - 'A';
+
+        ciphertext[i] = ((key[0][0] * p1 + key[0][1] * p2) % 26) + 'A';
+        ciphertext[i + 1] = ((key[1][0] * p1 + key[1][1] * p2) % 26) + 'A';
+    }
+    ciphertext[len] = '\0';
+
+    printf("\nEncrypted Text : %s\n", ciphertext);
+
+    // Decryption
+    for (int i = 0; i < len; i += 2) {
+        int c1 = ciphertext[i] - 'A';
+        int c2 = ciphertext[i + 1] - 'A';
+
+        decrypted[i] = ((inverse[0][0] * c1 + inverse[0][1] * c2) % 26) + 'A';
+        decrypted[i + 1] = ((inverse[1][0] * c1 + inverse[1][1] * c2) % 26) + 'A';
+    }
+    decrypted[len] = '\0';
+
+    printf("Decrypted Text : %s\n", decrypted);
+
+    return 0;
+}
