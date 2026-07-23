@@ -1,0 +1,18 @@
+#include <stdio.h>
+
+int main() {
+    char plaintext[] = "COMPUTER";
+    char key[] = "A1B2C3D4";
+
+    printf("Plaintext : %s\n", plaintext);
+    printf("Key       : %s\n", key);
+
+    printf("Ciphertext (Hex): ");
+
+    for(int i = 0; i < 8; i++) {
+        unsigned char cipher = plaintext[i] ^ key[i];
+        printf("%02X", cipher);
+    }
+
+    return 0;
+}
