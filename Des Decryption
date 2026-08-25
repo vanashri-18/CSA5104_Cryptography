@@ -1,0 +1,18 @@
+from Crypto.Cipher import DES
+
+# Input
+ciphertext_hex = "85E813540F0AB405"
+key_hex = "133457799BBCDFF1"
+
+# Convert hexadecimal to bytes
+ciphertext = bytes.fromhex(ciphertext_hex)
+key = bytes.fromhex(key_hex)
+
+# DES decryption
+cipher = DES.new(key, DES.MODE_ECB)
+plaintext = cipher.decrypt(ciphertext)
+
+# Output
+print("Ciphertext :", ciphertext_hex)
+print("Key        :", key_hex)
+print("Plaintext  :", plaintext.hex().upper())
