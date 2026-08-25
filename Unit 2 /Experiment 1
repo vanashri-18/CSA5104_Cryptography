@@ -1,0 +1,19 @@
+from Crypto.Cipher import DES
+
+plaintext = "COMPUTER"
+key = "A1B2C3D4"
+
+# Convert to bytes
+plaintext = plaintext.encode()
+key = key.encode()
+
+# DES encryption using ECB mode
+cipher = DES.new(key, DES.MODE_ECB)
+
+# Encrypt
+ciphertext = cipher.encrypt(plaintext)
+
+# Display result
+print("Plaintext :", plaintext.decode())
+print("Key       :", key.decode())
+print("Ciphertext:", ciphertext.hex().upper())
